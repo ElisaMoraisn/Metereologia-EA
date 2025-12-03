@@ -1,38 +1,34 @@
-// URL do seu Google Apps Script
-const urlFirebase = "https://script.google.com/a/macros/usp.br/s/AKfycbxi2GDt43F9h4efzsKVsEPyuUJoTVRRUFdib9LFAL6z2TrqqKGfWZDA7U6jgnZ6RgQ/exec";
+// ============================
+// CONFIGURAÇÃO DO FIREBASE
+// ============================
+const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "SEU_PROJETO.firebaseapp.com",
+    databaseURL: "https://meteorologia-ea-default-rtdb.firebaseio.com",
+    projectId: "SEU_PROJETO",
+    storageBucket: "SEU_PROJETO.appspot.com",
+    messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+    appId: "SEU_APP_ID"
+};
 
-// Busca dados do Web App
-async function buscarDados() {
-    try {
-        const response = await fetch(urlFirebase);
-        const dados = await response.json();
+// Inicializa Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
-        const temp = dados.temperatura ?? 0;
-        const umidade = dados.umidade ?? 0;
-        const pressao = dados.pressao ?? 0;
-
-        document.getElementById("temp").innerText = temp + " °C";
-        document.getElementById("umidade").innerText = umidade + " %";
-        document.getElementById("pressao").innerText = pressao + " hPa";
-
-        atualizarGraficos(temp, umidade, pressao);
-    } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-    }
-}
-
-// Configuração dos gráficos
+// ============================
+// CONFIGURAÇÃO DOS GRÁFICOS
+// ============================
 const configGrafico = (label, cor, maxY = null) => ({
     type: 'line',
-    data: { labels: [], datasets: [{
-        label,
-        data: [],
-        borderColor: cor,
-        backgroundColor: cor + '55',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 4
-    }]},
+    data: { labels: [], datasets: [{ 
+        label, 
+        data: [], 
+        borderColor: cor, 
+        backgroundColor: cor + '55', 
+        fill: true, 
+        tension: 0.4, 
+        pointRadius: 4 
+    }] },
     options: {
         responsive: true,
         plugins: {
@@ -50,7 +46,9 @@ const graficoTemperatura = new Chart(document.getElementById('graficoTemp'), con
 const graficoUmidade = new Chart(document.getElementById('graficoUmidade'), configGrafico('Umidade', '#aaddff', 100));
 const graficoPressao = new Chart(document.getElementById('graficoPressao'), configGrafico('Pressão', '#aaffaa'));
 
-// Atualiza gráficos com histórico de 30 pontos
+// ============================
+// FUNÇÃO PARA ATUALIZAR GRÁFICOS
+// ============================
 function atualizarGraficos(temp, umidade, pressao) {
     const agora = new Date().toLocaleTimeString();
 
@@ -69,5 +67,31 @@ function atualizarGraficos(temp, umidade, pressao) {
     adicionar(graficoPressao, pressao);
 }
 
-// Atualiza a cada 5 segundos
-setInterval(buscarDados, 5000);
+// ============================
+// ESCUTA EM TEMPO REAL DO FIREBASE
+// ============================
+const leiturasRef = database.ref("leituras");
+leiturasRef.on("value", snapshot => {
+    const dados = snapshot.val();
+    let ultima = null;
+
+    function percorrer(obj) {
+        for (let key in obj) {
+            if (obj[key].ts) ultima = obj[key];
+            else percorrer(obj[key]);
+        }
+    }
+    percorrer(dados);
+
+    if (ultima) {
+        const temp = ultima.temp ?? 0;
+        const umidade = ultima.umidade ?? 0;
+        const pressao = ultima.press ?? 0;
+
+        document.getElementById("temp").innerText = temp + " °C";
+        document.getElementById("umidade").innerText = umidade + " %";
+        document.getElementById("pressao").innerText = pressao + " hPa";
+
+        atualizarGraficos(temp, umidade, pressao);
+    }
+});
