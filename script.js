@@ -1,5 +1,7 @@
-const urlFirebase = "COLE_AQUI_A_URL_DO_SEU_WEBAPP"; // substitua pela sua URL
+// URL do seu Google Apps Script
+const urlFirebase = "https://script.google.com/a/macros/usp.br/s/AKfycbxi2GDt43F9h4efzsKVsEPyuUJoTVRRUFdib9LFAL6z2TrqqKGfWZDA7U6jgnZ6RgQ/exec";
 
+// Busca dados do Web App
 async function buscarDados() {
     try {
         const response = await fetch(urlFirebase);
